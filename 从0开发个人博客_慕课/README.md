@@ -215,7 +215,44 @@ cmd 连接 redis > redis-cli
 
 file-test/ 日志测试
 
+utils/log.js 封装了如何写日志的函数 
+
+## 8章 安全
+
+- sql注入，窃取数据库内容
+
+    通过sql语句拼接，进行的攻击手段
+
+    预防措施，使用mysql escape函数处理输入内容
+    ```js
+    select username, realname from users where username='${username}' and password='${password}'
+    ```
+    例如上面的sql语句，如果username 用户输入文本的时候 输入这样的内容: username --
+    那么在sql 语句会变成这样
+    ```js
+    select username, realname from users where username='username --' and password='${password}'
+    ```
+    在sql语法中 -- 是注释的意思，这样的操作会导致，用户密码判断失效。就能直接登录成功。
 
 
+    :sunglasses: 通过 escape() 函数执行过滤一下语句
 
+        username = escape(username)
+        password = escape(password)
+    
+- SXX 攻击，窃取前端的 cookie
 
+    页面内容掺杂JS代码，以获取网页信息。
+
+    :sunglasses: 解决方法，就是转换字符串，从而让那一段JS代码无法运行。
+    如下代码 
+    ```js
+        <script>alert(document.cookie)</script>
+    ```
+    如果用户输入的是这个代码，那么当，再次请求回来的时候。 浏览器会检测到script ，自动执行其中的内容。
+
+    :sunglasses:
+        npm i xss 库可以解决，本质就是过滤一下前端发送过来的信息。
+
+- 加密
+    数据库一般也不要直接存储密码明文，要利用某个加密算法对明文进行加密解密。 这里单独选择某个加密库即可。

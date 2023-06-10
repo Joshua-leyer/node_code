@@ -1,5 +1,5 @@
 const {exec} = require('../db/mysql')
-
+const {xss} = require('xss')
 // queryString URL参数的方式传递过来的
 const getList = (author, keyword) => {
     // 1=1 永远成立，显然写不写都一样。不过写了的作用就是占位置
@@ -27,7 +27,7 @@ const getDetail = (id) => {
 
 // data = {} , 兼容如果 data 没有就默认 {}
 const newBlog = (data = {}) => {
-    const title = data.title
+    const title = xss(data.title)  // 举例 ，防止 xss 攻击
     const content = data.content
     const author = data.author
     const createtime = Date.now()
