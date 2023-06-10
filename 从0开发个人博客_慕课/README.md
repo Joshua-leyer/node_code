@@ -1,5 +1,10 @@
 # Learn Log
 
+joshua 看的教程是旧版
+
+2022年时候出了个新版， 已经看到6章节了。好气。
+
+
 - 功能需求:
     + 首页、作者主页、博客详情页
     + 登录页
@@ -13,7 +18,10 @@
 - ./muke_320_blog.sql 是简单的mySql 的增删改查的语句
 
 - blog-1/ 第四章节完成的内容
-
+- redis-test/ redis 的学习
+- file-test/ 日志测试
+- utils/ log.js 里面封装了记录日志，也就是写文件操作，把req对象下的一些请求头拿过来存到文件当中
+- 
 
 ## 1 & 2章
 
@@ -129,7 +137,83 @@ module.exports = {
   - :yellow_heart: 学习一个知识点就是 node http库，处理请求的时候 req res对象 是在整个击中路由到处理完成，的过程中。这两俩对象是都走一遍的。所以他们俩有可以携带一些数据的思路
 
 
+## 6章 登录
 
+介于现在注册方式很多了，不只是单纯的用户名登录和注册，微信，第三方关联等等。 所以课程重点讲登录。
+主要学习 如何利用cookie这个东西来实现登录验证的功能
+
+本教程用的还是 session
+
+
+:star: response 响应 http请求头中 Set-Cookie 字段内容的含义
+
+:star: cookie 有一个便捷的地方就是 如果响应头有 Set-Cookie 字段，那么浏览器会 **自动** 把这个值复制到 cookie 中。
+
+
+--------------------------
+:star::star::star: 艹 设置 session 的坑 TM 的，是过不去了
+为什么设置保存session 却要使用req 对象？
+```js
+    设置 session
+    req.session.username = data.username
+    req.session.realname = data.realname
+```
+
+joshua 猜测(TM 的又要猜) 网络上一帮傻逼教程。
+
+:star:__涉及到对象，浅拷贝引用的概念__:star:
+
+after a while ... 
+
+
+:books: 果然是对象的引用。 这个知识点是最基础的  __对象数据浅拷贝__ 知识点
+
+    req.session = SESSION_DATA
+
+这句代码就是把 SESSION_DATA 浅拷贝给req.session 下，这样 这个session 就可以跟着 req跑完整个 路由处理了。也就能在
+处理的时候使用，修改session了。太TM 草了。
+由于代码的距离比较远，还真不好想到。
+
+这帮傻逼教程不知道是心知肚明，自己也搞不懂，照葫芦画瓢还是咋回事。就是不讲。这么关键的一个步骤
+
+---------------------------
+
+ :trophy: :custard:
+
+
+session 使用 redis 。 来做处理。 session 访问非常的频繁，对性能要求很高。 在整个请求的入口地方就需要做出判断。
+
+
+#### redis 的使用
+
+在目录下 启动 cmd 
+
+redis-server redis.windows.conf
+
+[redis 的使用](https://blog.csdn.net/jiankang66/article/details/89876947)
+
+
+cmd 连接 redis > redis-cli
+
+！注意 本教程使用的redis 版本是 3.x ， 最新的4.x 接口不一样了，会无法正常运行。
+
+教程使用的是 2.x版本，joshua 使用3.x 还能够正常使用
+
+教程缺失了 一个配置 redis的使用。 烦死了:anger: :rage::rage::rage: 真的心累呀
+
+毫不例外的，这个项目又要烂尾了。算了重点还是知识点的学习吧。气死。
+
+学着学着，发现教程少了一节。
+
+在网上找到了 其他人的代码，
+[aaamrh/learn-nodejs-blog](https://github.com/aaamrh/learn-nodejs-blog/tree/master/blog1/src)
+
+
+## 7章 日志
+
+日志存储到文件中， node操作文件就需要学习 __流__ 的概念。  见个人的 oneNote 笔记
+
+file-test/ 日志测试
 
 
 
