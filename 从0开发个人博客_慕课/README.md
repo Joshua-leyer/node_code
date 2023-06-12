@@ -21,7 +21,7 @@ joshua 看的教程是旧版
 - redis-test/ redis 的学习
 - file-test/ 日志测试
 - utils/ log.js 里面封装了记录日志，也就是写文件操作，把req对象下的一些请求头拿过来存到文件当中
-- 
+- blog-express/ 
 
 ## 1 & 2章
 
@@ -34,6 +34,7 @@ joshua 看的教程是旧版
     "dev": "cross-env NODE_ENV=dev nodemon ./bin/www.js"
     "prd": "cross-env NODE_ENV=production nodemon ./bin/www.js"
 
+需要明白的是 cross-env 具体解决了什么问题，是这个 web 应用放到不同的环境下需要的配置不同，例如数据库路径等
 
 ## 3章
 
@@ -176,6 +177,10 @@ after a while ...
 
 这帮傻逼教程不知道是心知肚明，自己也搞不懂，照葫芦画瓢还是咋回事。就是不讲。这么关键的一个步骤
 
+切记： express-session ，服务端是 req.session 保存信息的。这种操作比较不符合逻辑。但是人家这个插件就是这么用的，没办法。
+
+
+
 ---------------------------
 
  :trophy: :custard:
@@ -186,6 +191,8 @@ session 使用 redis 。 来做处理。 session 访问非常的频繁，对性�
 
 #### redis 的使用
 
+作用，永久化存储 session， 避免服务端停掉，造成 session 丢失
+
 在目录下 启动 cmd 
 
 redis-server redis.windows.conf
@@ -193,7 +200,7 @@ redis-server redis.windows.conf
 [redis 的使用](https://blog.csdn.net/jiankang66/article/details/89876947)
 
 
-cmd 连接 redis > redis-cli
+cmd 连接 redis > redis-cli , 然后就可以执行 redis 命令了
 
 ！注意 本教程使用的redis 版本是 3.x ， 最新的4.x 接口不一样了，会无法正常运行。
 
@@ -207,6 +214,8 @@ cmd 连接 redis > redis-cli
 
 在网上找到了 其他人的代码，
 [aaamrh/learn-nodejs-blog](https://github.com/aaamrh/learn-nodejs-blog/tree/master/blog1/src)
+
+/db/redis.js 文件里面封装了 redis 的 set get 函数
 
 
 ## 7章 日志
@@ -256,3 +265,83 @@ utils/log.js 封装了如何写日志的函数
 
 - 加密
     数据库一般也不要直接存储密码明文，要利用某个加密算法对明文进行加密解密。 这里单独选择某个加密库即可。
+
+
+## 9章 express 重构
+
+在 blog-express/ 文件中
+
+- express 重要的一个知识点 中间件机制
+
+express-generator  脚手架
+
+npm i express-generator -g 
+
+express express-test // 终端就可以使用 express 命令生成一个项目
+
+
+>对路由的理解. 是代码顺序从上到下一个个判断是否命中的， 通常app.use() 中间件就是在被未命中之前，先对数据进行某些处理。
+插件是干嘛的？ 就是原生来操作的话，处理这些http数据很复杂。插件在路由之前使用，就会提前把数据给处理了，并且把方法绑定到res, req对象上面，这样后续的路由函数就可以使用res. 的方式拿到属性或方法
+
+为什么要挂载到response 、 request 对象上面呢？ 这需要知道一个前置知识，就是对这俩对象的理解。joshua 目前还没有完全的理解这两个对象，现在只知道，在整个http请求过程中都会创建这么一个对象，结束以后销毁。
+切这俩对象跟BUS一样，可以携带信息。所以之前joshua说的 挂载的思想， 这相当的重要。奈何那些教程就是不说。拿来就用。思想才是最重要的。
+
+
+使用这个中间件，express能够解析 json 格式的 post 请求
+
+```js
+app.use(express.json())
+```
+- #### body-parser 中间件 , 可以让express应用更方便的收到post请求的数据内容
+
+    __这个中间件直接引用即可，4.x 以后版本不需要下载了__
+
+    ```js
+    原来需要引用 body-parser。
+    const bodyParser = require('body-parser');
+    const app = express();
+    // 使用 body-parser 中间件解析 JSON 数据和 URL 编码的数据
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: false }));
+
+    ||  4.x以后不需要引用直接使用内置的 || 
+    app.use(express.json())   解析 application/json 格式的数据
+    app.use(express.urlencoded({ extended: false }));  解析 x-www-form-urlencoded 格式
+    ```
+
+- 中间件机制的学习
+
+
+- :grey_exclamation:  express-session 关联 redis 时候由于教程版本问题，使用方法发生改变
+    ```js
+    const RedisStore = require('connect-redis')(session)
+    改为
+    let RedisStore = require('connect-redis').default;
+    ```
+    这种东西很容易发生变化。
+
+
+
+- >重新整理一下 express-session  。 这个东西内置的已经帮我们去操作 cookie了。
+所以， 我们无论是获取 cookie （前端发送过来携带的信息） 还是设置 session & 设置cookie 。
+都是 req.session 就可以了。 express-session 已经帮我们都处理好了.
+这种框架离原生有些远了。导致感觉操作都变形了，很不好理解。他的逻辑
+过程是这样的，第一次访问，没有携带 cookie , 会被session 中间件最开始拦截到http请求，发现没有请求过。
+没有的话，就什么都不做，当然会把当前的session 挂载到 req 对象上。
+然后req 继续往下走。
+击中路由以后， 我们设定要不要设置 cookie 如果需要，就req.session = 就可以了。
+当然，这都取决与 上面拦截的时候有没有发现 cookie. 
+说实话，他这个东西真的不好用。
+
+- express 使用日志： morgan 库.
+    ```js
+    app.use(logger('dev'));
+    ```
+
+
+### 手搓一个中间件的实现
+  :disappointed:  :sob::sob:
+    太难了，不学这里了。 /lib/like-express.js 先留着吧
+
+:seedling: 另外，Promise 也不是很好用，在代码阅读性上太难看。最终使用 await 比较好。
+

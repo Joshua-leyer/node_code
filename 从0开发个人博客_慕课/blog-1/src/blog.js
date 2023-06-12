@@ -18,6 +18,7 @@ const handleBlogRouter = (req, res) => {
         const resultPromise = getList(author, keyword)
         return resultPromise
                 .then(listData => {
+                    // 后来想了想，这种返回给最初的入口，操作就很逆天。数据来来回回太多了。 原生的写法，他这个也不是很好。
                     return new SuccessModel(listData)
                 })
                 .catch(err => {
